@@ -1,16 +1,18 @@
 import re
 
 def path_to_experiment_particle_frame(path):
-    regex = "_particle\[([0-9]+)\]_frame\[([0-9]+)\]"
-    capture = re.findall(regex, path)
-    experiment = str(capture[0][1])
+    stem = path.stem
+    regex = "(.*)_particle\[([0-9]+)\]_frame\[([0-9]+)\]"
+    capture = re.findall(regex, str(stem))
+    experiment = str(capture[0][0])
     particle = int(capture[0][1])
     frame = int(capture[0][2])
     return experiment, particle, frame
 
 def path_to_annotation_experiment_particle_frame(path):
-    regex = "(*+)_particle\[([0-9]+)\]_frame\[([0-9]+)\]"
-    capture = re.findall(regex, path)
+    stem = path.stem
+    regex = "(.*)_particle\[([0-9]+)\]_frame\[([0-9]+)\]"
+    capture = re.findall(regex, str(stem))
     annotation = path.parts[-2]
     experiment = str(capture[0][1])
     particle = int(capture[0][1])

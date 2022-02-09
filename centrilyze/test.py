@@ -26,21 +26,28 @@ from centrilyze import constants
 def annotate(image_model, dataloader):
     # confusion_matrix_test = np.zeros((len(constants.classes), len(constants.classes)))
     annotations = {}
+
+    model = image_model.model
     for i, data in enumerate(dataloader, 0):
         # get the inputs; data is a list of [inputs, labels]
 
         key = data["key"]
+        # print(key)
         path = data["path"]
         inputs = data["image"]
         labels = data["label"]
 
         # forward + backward + optimize
-        outputs = image_model(inputs)
+        outputs = model(inputs)
 
         for j in [0, 1, 2, 3]:
             # confusion_matrix_test[labels[j], torch.argmax(outputs[j])] += 1
             true_label = int(labels[j])
             assigned_label = int(torch.argmax(outputs[j]).detach().cpu())
-            annotations[key[j]] = {"true": true_label, "assigned": assigned_label}
+            experiment = str(key[0][j])
+            particle = int(key[1][j])
+            frame = int(key[2][j])
+
+            annotations[(experiment, particle, frame)] = {"true": true_label, "assigned": assigned_label}
 
     return annotations

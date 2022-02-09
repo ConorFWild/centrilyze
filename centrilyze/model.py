@@ -284,5 +284,8 @@ class CentrioleImageModel:
     def load_state_dict(self, path, map_location=torch.device("cpu")):
         self.model.load_state_dict(torch.load(str(path), map_location=map_location))
 
+    def __call__(self, *args, **kwargs):
+        return self.model()
+
 
 

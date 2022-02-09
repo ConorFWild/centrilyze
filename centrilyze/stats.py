@@ -27,7 +27,7 @@ def get_confusion_matrix(annotations):
     confusion_matrix_test = np.zeros((len(constants.classes), len(constants.classes)))
 
     for key, annotation in annotations.items():
-        confusion_matrix_test[annotation["true"], annotations["assigned"]] += 1
+        confusion_matrix_test[annotation["true"], annotation["assigned"]] += 1
 
     confusion_matrix_test_table = pd.DataFrame(
         data=confusion_matrix_test,

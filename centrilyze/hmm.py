@@ -41,7 +41,7 @@ def nest_annotation_keys(annotations):
             nested_annotations[experiment][particle] = {}
 
         if not frame in nested_annotations[experiment][particle]:
-            nested_annotations[experiment][particle] = annotation
+            nested_annotations[experiment][particle][frame] = annotation
 
     return nested_annotations
 
