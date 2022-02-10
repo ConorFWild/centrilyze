@@ -2,27 +2,29 @@
 
 A small python package for analysing images of centrioles.
 
-## Installation
-
-It is reccomended that you install PanDDA 2 in it's own python 3.9 anaconda enviroment. This can be achieved by installing anaconda and then:
-
+## setup enviroment
 ```bash
-conda create -n pandda2 python=3.9
-conda activate pandda2
-conda install -c conda-forge -y fire numpy scipy joblib scikit-learn umap-learn bokeh dask dask-jobqueue hdbscan matplotlib
-conda install -c conda-forge -y seaborn
 git clone https://github.com/ConorFWild/centrilyze.git
-pip install -e .
-
+cd nic
+conda create -n nic python=3.7
+conda activate nic
+conda install -c conda-forge numpy pandas scipy scikit-learn jupyter matplotlib
+conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+jupyter notebook
 ```
 
+## Open notebook
+open notebooks
+open test.ipynb
 
+## Get a copy of the model
+located at:
 
-## Running
+https://drive.google.com/drive/folders/1uT5toYVPpbr-4aiN7oZeXRdmWMOl9Rqy?usp=sharing
 
-Once you have installed PanDDA 2 in a conda enviroment, running it is as simple as:
+in the data folder.
 
-```bash
-python /path/to/analyse.py <data directories> <output directory> --pdb_regex="dimple.pdb" --mtz_regex="dimple.mtz" --structure_factors='("2FOFCWT","PH2FOFCWT")' <options>
+## Run testing
+change the test_dir path to your path of intrest
 
-```
+change the path of the model to load to where you have saved it
