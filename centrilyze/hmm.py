@@ -46,16 +46,44 @@ def nest_annotation_keys(annotations):
     return nested_annotations
 
 
-def get_sequence_matrix(annotations, frame_numbers):
+def reannotate(nested_annotations, annotation_mapping):
+    new_annotations = {}
+    for experiment, particles in nested_annotations.items():
+        if experiment not in new_annotations:
+            new_annotations[experiment] = {}
+
+        for particle, frames in particles.items():
+            if particle not in new_annotations[experiment]:
+                new_annotations[experiment][particle] = {}
+
+            for frame, annotation in frames.items():
+
+                new_annotation = {
+                    "true": annotation_mapping[annotation["true"]],
+                    "assigned": annotation_mapping[annotation["assigned"]],
+                }
+
+                if frame not in new_annotations[experiment][particle]:
+                    new_annotations[experiment][particle][frame] = new_annotation
+
+    return new_annotations
+
+
+def get_sequence_matrix(annotations, frame_numbers, num_classes):
     all_sequences = []
     for experiment, particles in annotations.items():
         for particle, frames in particles.items():
             ordered_annotations = []
             for frame_number in frame_numbers:
-                annotation = frames[frame_number]["test"]
-                ordered_annotations.append(annotation)
+                if frame_number not in frames:
+                    ordered_annotations.append(num_classes-1)
+                else:
+                    annotation = frames[frame_number]["assigned"]
+                    ordered_annotations.append(annotation)
 
-            all_sequences.append(ordered_annotations)
+            if len(frame_numbers) == len(ordered_annotations):
+                all_sequences.append(ordered_annotations)
+
 
     sequence_matrix = np.array(all_sequences)
 
@@ -63,16 +91,22 @@ def get_sequence_matrix(annotations, frame_numbers):
 
 
 #
-# def get_transition_matrix(annotations):
-#
-#     naive_transition_matrix = np.zeros((7, 7))
-#
-#
-#     for sequence in sequences.values():
-#         prev_state = 6
-#         for state in sequence:
-#             naive_transition_matrix[prev_state, state] += 1
-#             prev_state = state
+def get_transition_count_matrix(sequence_matrix, num_classes):
+
+    naive_transition_matrix = np.zeros((num_classes, num_classes))
+
+    for sequence in sequence_matrix:
+        prev_state = num_classes - 1
+        for state in sequence:
+            naive_transition_matrix[prev_state, state] += 1
+            prev_state = state
+
+    return naive_transition_matrix
+
+
+def get_transition_rate_matrix(transition_count_matrix):
+    naive_transition_matrix = transition_count_matrix / np.sum(transition_count_matrix, axis=1).reshape((-1, 1))
+    return naive_transition_matrix
 
 
 class HMM:

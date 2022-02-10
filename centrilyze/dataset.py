@@ -40,6 +40,14 @@ class ImageDataset(Dataset):
 
         return {"image": image, "label": label, "key": sample_key, "path": str(sample["path"])}
 
+    def get_sequence_data(self, experiment, particle):
+        particle_images = {}
+        for key, data in self.data.items():
+            if key[0] == experiment and key[1] == particle:
+                particle_images[key] = data
+
+        return {key: particle_images[key] for key in sorted(particle_images)}
+
     @staticmethod
     def from_annotated_images():
         ...

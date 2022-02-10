@@ -5,6 +5,16 @@ classes = {
     "Precieved_Oriented": 3,
     "Slanted": 4,
     "Unidentified": 5,
+    "No_sample": 6,
+}
+classes_inverse = {
+    0: "Not_Oriented",
+    1: "Oriented",
+    2: "Precieved_Not_Oriented",
+    3: "Precieved_Oriented",
+    4: "Slanted",
+    5: "Unidentified",
+    6: "No_sample",
 }
 
 classes_reduced = {
@@ -13,6 +23,13 @@ classes_reduced = {
     "Slanted": 2,
     "Unidentified": 3,
     "No_sample": 4,
+}
+classes_reduced_inverse = {
+    0: "Not_Oriented",
+    1: "Oriented",
+    2: "Slanted",
+    3: "Unidentified",
+    4: "No_sample",
 }
 annotation_mapping = {
     0: 0,
