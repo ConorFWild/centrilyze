@@ -8,7 +8,7 @@ git clone https://github.com/ConorFWild/centrilyze.git
 cd nic
 conda create -n nic python=3.7
 conda activate nic
-conda install -c conda-forge numpy pandas scipy scikit-learn jupyter matplotlib
+conda install -c conda-forge numpy pandas scipy scikit-learn jupyter matplotlib hmmlearn
 conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 jupyter notebook
 ```

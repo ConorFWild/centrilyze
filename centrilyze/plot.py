@@ -39,12 +39,14 @@ def save_all_state_figs(states, testset, output_dir, reannotations,):
         annotations = {}
         for particle_key, particle_data in particles.items():
 
-            annotations[particle_key] = {
-                key: constants.classes_reduced_inverse[reannotations[key[0]][key[1]][key[2]]["assigned"]]
-                for key, frame
-                in particle_data.items()
-            }
+            annotations[particle_key] = {}
+            for key, frame in particle_data.items():
+                annotations[particle_key][key] =  constants.classes_reduced_inverse[reannotations[key[0]][key[1]][key[
+                    2]][
+                    "assigned"]]
         state_dir = Path(output_dir) / str(state)
         if not state_dir.exists():
             os.mkdir(state_dir)
         save_state_figs(particles, annotations, state_dir)
+
+

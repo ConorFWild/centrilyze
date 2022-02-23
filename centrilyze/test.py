@@ -28,6 +28,7 @@ def annotate(image_model, dataloader):
     annotations = {}
 
     model = image_model.model
+    model.eval()
     for i, data in enumerate(dataloader, 0):
         # get the inputs; data is a list of [inputs, labels]
 
@@ -41,13 +42,16 @@ def annotate(image_model, dataloader):
         outputs = model(inputs)
 
         for j in [0, 1, 2, 3]:
-            # confusion_matrix_test[labels[j], torch.argmax(outputs[j])] += 1
-            true_label = int(labels[j])
-            assigned_label = int(torch.argmax(outputs[j]).detach().cpu())
-            experiment = str(key[0][j])
-            particle = int(key[1][j])
-            frame = int(key[2][j])
+            try:
+                # confusion_matrix_test[labels[j], torch.argmax(outputs[j])] += 1
+                true_label = int(labels[j])
+                assigned_label = int(torch.argmax(outputs[j]).detach().cpu())
+                experiment = str(key[0][j])
+                particle = int(key[1][j])
+                frame = int(key[2][j])
 
-            annotations[(experiment, particle, frame)] = {"true": true_label, "assigned": assigned_label}
+                annotations[(experiment, particle, frame)] = {"true": true_label, "assigned": assigned_label}
+            except:
+                continue
 
     return annotations
