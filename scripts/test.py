@@ -81,24 +81,33 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
         # Create a Pandas Excel writer using XlsxWriter as the engine.
         writer = pd.ExcelWriter(workbook_file)
 
-        for embryo_name, annotations in experiment_result.items():
+        records = []
 
-            records = []
-            for annotation_key, annotation in annotations.items():
-                experiment, particle, frame = annotation_key
-                annotation = annotation["assigned"]
-                record = {
-                    "Particle": particle,
-                    "Frame": frame,
-                    "Annotation": annotation,
-                }
-                records.append(record)
+        for repeat_name, repeat_result in experiment_result.items():
+
+            for treatment_name, treatment_result in repeat_result.items():
+
+                for embryo_name, annotations in experiment_result.items():
+
+                    for annotation_key, annotation in annotations.items():
+                        experiment, particle, frame = annotation_key
+                        annotation = annotation["assigned"]
+                        record = {
+                            "Repeat": repeat_name,
+                            "Treatment": treatment_name,
+                            "Embryo": embryo_name,
+                            "Particle": particle,
+                            "Frame": frame,
+                            "Annotation": annotation,
+                        }
+                        records.append(record)
 
             df = pd.DataFrame(records)
-            df_sorted = df.sort_values(['Particle', 'Frame'], ascending=[True, True])
+            df_sorted = df.sort_values(["Repeat", "Treatment", "Embryo", 'Particle', 'Frame'],
+                                       ascending=[True, True, True, True, True])
 
             # Convert the dataframe to an XlsxWriter Excel object.
-            df_sorted.to_excel(writer, sheet_name=embryo_name, index=False)
+            df_sorted.to_excel(writer, sheet_name=repeat_name, index=False)
 
         # Close the Pandas Excel writer and output the Excel file.
         writer.save()
@@ -137,24 +146,39 @@ def centrilyze_test(
     experiment_results = {}
     for experiment in centrilyze_test_data:
         print(f"\tAnnotating embryos for experiment: {experiment.name}...")
-        # For each embryo
-        embryo_results = {}
-        for embryo in experiment:
-            print(f"\t\tAnnotating embryo: {embryo.name}...")
-            # Load the Embryo Data
-            testloader = load_embryo_dataset(embryo, batch_size)
 
-            # Annotate the data
-            annotations = annotate(image_model, testloader)
-            # print(annotations)
+        # For each repeat
+        repeat_results = {}
+        for repeat in experiment:
 
-            # Output the Confusion Matrix
-            # confusion_matrix_test_table = get_confusion_matrix(annotations)
+            # For each treatment
+            treatment_results = {}
+            for treatment in repeat:
 
-            #
-            embryo_results[embryo.name] = annotations
+                # For each embryo
+                embryo_results = {}
+                for embryo in experiment:
+                    print(f"\t\tAnnotating embryo: {embryo.name}...")
+                    # Load the Embryo Data
+                    testloader = load_embryo_dataset(embryo, batch_size)
 
-        experiment_results[experiment.name] = embryo_results
+                    # Annotate the data
+                    annotations = annotate(image_model, testloader)
+                    # print(annotations)
+
+                    # Output the Confusion Matrix
+                    # confusion_matrix_test_table = get_confusion_matrix(annotations)
+
+                    #
+                    embryo_results[embryo.name] = annotations
+
+                treatment_results[treatment.name] = embryo_results
+
+            repeat_results[repeat.name] = treatment_results
+
+        experiment_results[experiment.name] = repeat_results
+
+
 
     # Write to excel
     print(f"Saving results to {output_dir}...")

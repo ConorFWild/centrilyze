@@ -45,6 +45,52 @@ class EmbryoDataDir:
             yield image_file
 
 
+class TreatmentDataDir:
+    def __init__(self, experiment_data_dir: Path):
+        self.path = experiment_data_dir
+        self.name = experiment_data_dir.name
+        self.embryos = self.get_embryos_from_dir(self.path)
+
+    def get_embryos_from_dir(self, embryos_dir):
+
+        embryos = []
+        for directory in embryos_dir.glob("*"):
+            if not directory.is_dir():
+                continue
+            else:
+                embryo = ExperimentDataDir(directory)
+                embryos.append(embryo)
+
+        return embryos
+
+    def __iter__(self):
+        for embryo in self.embryos:
+            yield embryo
+
+
+class RepeatDataDir:
+    def __init__(self, experiment_data_dir: Path):
+        self.path = experiment_data_dir
+        self.name = experiment_data_dir.name
+        self.treatments = self.get_embryos_from_dir(self.path)
+
+    def get_embryos_from_dir(self, embryos_dir):
+
+        embryos = []
+        for directory in embryos_dir.glob("*"):
+            if not directory.is_dir():
+                continue
+            else:
+                embryo = ExperimentDataDir(directory)
+                embryos.append(embryo)
+
+        return embryos
+
+    def __iter__(self):
+        for embryo in self.treatments:
+            yield embryo
+
+
 class ExperimentDataDir:
     def __init__(self, experiment_data_dir: Path):
         self.path = experiment_data_dir
