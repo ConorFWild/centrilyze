@@ -68,6 +68,9 @@ def load_embryo_dataset(embryo, batch_size):
 
 
 def write_centrilyze_results_to_excel(experiment_results, out_dir):
+    if not out_dir.exists():
+        os.mkdir(out_dir)
+
     for experiment_name, experiment_result in experiment_results.items():
         experiment_out_dir = out_dir / experiment_name
         if not experiment_out_dir.exists():
@@ -89,22 +92,23 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
                     "Frame": frame,
                     "Annotation": annotation,
                 }
+                records.append(record)
 
             df = pd.DataFrame(records)
-            df_sorted = df.sort(['Particle', 'Frame'], ascending=[True, True])
+            df_sorted = df.sort_values(['Particle', 'Frame'], ascending=[True, True])
 
             # Convert the dataframe to an XlsxWriter Excel object.
-            df_sorted.to_excel(writer, sheet_name='embryo_name')
+            df_sorted.to_excel(writer, sheet_name=embryo_name)
 
-            # Close the Pandas Excel writer and output the Excel file.
-            writer.save()
+        # Close the Pandas Excel writer and output the Excel file.
+        writer.save()
 
 
 # Test function
 def centrilyze_test(
-        test_data_dir=r"/nic/data/test/col_02-20220318T142333Z-001",
+        test_data_dir=r"/nic/data/test",
         model_dir=r"C:\nic\new_test_script_test_folder\model",
-        output_dir=r"/nic/output/col_02",
+        output_dir=r"/nic/new_test_script_test_folder",
         n_iter=1000,
         batch_size=4,
 ):
@@ -117,10 +121,8 @@ def centrilyze_test(
     # emission_matrix_path_three_classes = Path("/nic/emission_matrix_three_classes.npy")
     output_dir = Path(output_dir).resolve()
 
-    # Get the model
-    model = CentrioleImageModel()
-
     # Load the trained model params
+    print("Loading model parameters...")
     image_model = CentrioleImageModel()
     image_model.load_state_dict(
         model_dir / "model.pyt",
@@ -128,19 +130,23 @@ def centrilyze_test(
     )
 
     # Get the test data
+    print("Finding test data...")
     centrilyze_test_data = CentrilyzeDataDir(test_data_dir)
 
     # For each experiment
     experiment_results = {}
     for experiment in centrilyze_test_data:
+        print(f"\tAnnotating embryos for experiment: {experiment.name}...")
         # For each embryo
         embryo_results = {}
         for embryo in experiment:
+            print(f"\t\tAnnotating embryo: {embryo.name}...")
             # Load the Embryo Data
             testloader = load_embryo_dataset(embryo, batch_size)
 
             # Annotate the data
             annotations = annotate(image_model, testloader)
+            # print(annotations)
 
             # Output the Confusion Matrix
             # confusion_matrix_test_table = get_confusion_matrix(annotations)
@@ -151,8 +157,10 @@ def centrilyze_test(
         experiment_results[experiment.name] = embryo_results
 
     # Write to excel
+    print(f"Saving results to {output_dir}...")
     write_centrilyze_results_to_excel(experiment_results, output_dir)
 
+    print("Done!")
 
 # main
 if __name__ == "__main__":

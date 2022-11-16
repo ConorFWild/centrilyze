@@ -33,7 +33,7 @@ class EmbryoDataDir:
 
         embryo_image_files = []
         for embryo_image_file in embryo_dir.glob("*"):
-            if not directory.isdir():
+            if not embryo_image_file.is_dir():
                 continue
             else:
                 embryo_image_files.append(embryo_image_file)
@@ -55,11 +55,11 @@ class ExperimentDataDir:
 
         embryos = []
         for directory in embryos_dir.glob("*"):
-            if not directory.isdir():
+            if not directory.is_dir():
                 continue
             else:
-                embryo = ExperimentDir(directory)
-                embryos.append(experiment)
+                embryo = ExperimentDataDir(directory)
+                embryos.append(embryo)
 
         return embryos
 
@@ -78,10 +78,10 @@ class CentrilyzeDataDir:
 
         experiments = []
         for directory in experiments_dir.glob("*"):
-            if not directory.isdir():
+            if not directory.is_dir():
                 continue
             else:
-                experiment = ExperimentDir(directory)
+                experiment = ExperimentDataDir(directory)
                 experiments.append(experiment)
 
         return experiments
