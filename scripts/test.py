@@ -80,14 +80,13 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
 
         # Create a Pandas Excel writer using XlsxWriter as the engine.
         writer = pd.ExcelWriter(workbook_file)
-
         records = []
 
         for repeat_name, repeat_result in experiment_result.items():
 
             for treatment_name, treatment_result in repeat_result.items():
 
-                for embryo_name, annotations in experiment_result.items():
+                for embryo_name, annotations in treatment_result.items():
 
                     for annotation_key, annotation in annotations.items():
                         experiment, particle, frame = annotation_key
@@ -150,15 +149,17 @@ def centrilyze_test(
         # For each repeat
         repeat_results = {}
         for repeat in experiment:
+            print(f"\t\tAnnotating repeat: {repeat.name}...")
 
             # For each treatment
             treatment_results = {}
             for treatment in repeat:
+                print(f"\t\t\tAnnotating treatment: {treatment.name}...")
 
                 # For each embryo
                 embryo_results = {}
-                for embryo in experiment:
-                    print(f"\t\tAnnotating embryo: {embryo.name}...")
+                for embryo in treatment:
+                    print(f"\t\t\t\tAnnotating embryo: {embryo.name}...")
                     # Load the Embryo Data
                     testloader = load_embryo_dataset(embryo, batch_size)
 
