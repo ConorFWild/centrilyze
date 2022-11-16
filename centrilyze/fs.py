@@ -1,4 +1,6 @@
+from pathlib import Path
 import re
+
 
 def path_to_experiment_particle_frame(path):
     stem = path.stem
@@ -9,6 +11,7 @@ def path_to_experiment_particle_frame(path):
     frame = int(capture[0][2])
     return experiment, particle, frame
 
+
 def path_to_annotation_experiment_particle_frame(path):
     stem = path.stem
     regex = "(.*)_particle\[([0-9]+)\]_frame\[([0-9]+)\]"
@@ -18,6 +21,74 @@ def path_to_annotation_experiment_particle_frame(path):
     particle = int(capture[0][1])
     frame = int(capture[0][2])
     return annotation, experiment, particle, frame
+
+
+class EmbryoDataDir:
+    def __init__(self, embryo_data_dir: Path):
+        self.path = embryo_data_dir
+
+        self.image_files = self.get_image_files_from_dir(self.path)
+
+    def get_embryos_from_dir(self, embryo_dir):
+
+        embryo_image_files = []
+        for embryo_image_file in embryo_dir.glob("*"):
+            if not directory.isdir():
+                continue
+            else:
+                embryo_image_files.append(embryo_image_file)
+
+        return embryo_image_files
+
+    def __iter__(self):
+        for image_file in self.image_files:
+            yield image_file
+
+
+class ExperimentDataDir:
+    def __init__(self, experiment_data_dir: Path):
+        self.path = experiment_data_dir
+        self.name = experiment_data_dir.name
+        self.embryos = self.get_embryos_from_dir(self.path)
+
+    def get_embryos_from_dir(self, embryos_dir):
+
+        embryos = []
+        for directory in embryos_dir.glob("*"):
+            if not directory.isdir():
+                continue
+            else:
+                embryo = ExperimentDir(directory)
+                embryos.append(experiment)
+
+        return embryos
+
+    def __iter__(self):
+        for embryo in self.embryos:
+            yield embryo
+
+
+class CentrilyzeDataDir:
+    def __init__(self, centrilyze_data_dir: Path):
+        self.path = centrilyze_data_dir
+        self.name = centrilyze_data_dir.name
+        self.experiments = self.get_experiments_from_dir(self.path)
+
+    def get_experiments_from_dir(self, experiments_dir):
+
+        experiments = []
+        for directory in experiments_dir.glob("*"):
+            if not directory.isdir():
+                continue
+            else:
+                experiment = ExperimentDir(directory)
+                experiments.append(experiment)
+
+        return experiments
+
+    def __iter__(self):
+        for experiment in self.experiments:
+            yield experiment
 
 
 class CentrioleImageFiles:
