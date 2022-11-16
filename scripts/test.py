@@ -3,6 +3,8 @@ from pathlib import Path
 import json
 import re
 
+import fire
+
 import torch
 from torch import Tensor
 import torch.optim as optim
@@ -100,9 +102,9 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
 
 # Test function
 def centrilyze_test(
-        test_data_dir="/nic/data/test/col_02-20220318T142333Z-001",
-        model_dir="C:\nic\new_test_script_test_folder\model",
-        output_dir="/nic/output/col_02",
+        test_data_dir=r"/nic/data/test/col_02-20220318T142333Z-001",
+        model_dir=r"C:\nic\new_test_script_test_folder\model",
+        output_dir=r"/nic/output/col_02",
         n_iter=1000,
         batch_size=4,
 ):
@@ -149,7 +151,7 @@ def centrilyze_test(
         experiment_results[experiment.name] = embryo_results
 
     # Write to excel
-    write_centrilyze_results_to_excel(experiment_results)
+    write_centrilyze_results_to_excel(experiment_results, output_dir)
 
 
 # main
