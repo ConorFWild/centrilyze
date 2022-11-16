@@ -71,6 +71,7 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
     if not out_dir.exists():
         os.mkdir(out_dir)
 
+    # Sample annotations
     for experiment_name, experiment_result in experiment_results.items():
         experiment_out_dir = out_dir / experiment_name
         if not experiment_out_dir.exists():
@@ -101,12 +102,59 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
                         }
                         records.append(record)
 
-            df = pd.DataFrame(records)
-            df_sorted = df.sort_values(["Repeat", "Treatment", "Embryo", 'Particle', 'Frame'],
-                                       ascending=[True, True, True, True, True])
+        df = pd.DataFrame(records)
+        df_sorted = df.sort_values(["Repeat", "Treatment", "Embryo", 'Particle', 'Frame'],
+                                   ascending=[True, True, True, True, True])
 
-            # Convert the dataframe to an XlsxWriter Excel object.
-            df_sorted.to_excel(writer, sheet_name=repeat_name, index=False)
+        # Convert the dataframe to an XlsxWriter Excel object.
+        df_sorted.to_excel(writer, sheet_name=experiment_name, index=False)
+
+        # Close the Pandas Excel writer and output the Excel file.
+        writer.save()
+
+    # Summaries
+    for experiment_name, experiment_result in experiment_results.items():
+        experiment_out_dir = out_dir / experiment_name
+        if not experiment_out_dir.exists():
+            os.mkdir(experiment_out_dir)
+
+        workbook_file = experiment_out_dir / f"{experiment_name}.xlsx"
+
+        # Create a Pandas Excel writer using XlsxWriter as the engine.
+        writer = pd.ExcelWriter(workbook_file)
+        records = []
+
+        for repeat_name, repeat_result in experiment_result.items():
+
+            for treatment_name, treatment_result in repeat_result.items():
+
+                for embryo_name, annotations in treatment_result.items():
+
+                    count_dict = {}
+
+                    for annotation_class in constants.classes:
+                        count_dict[annotation_class] = 0
+
+                    for annotation_key, annotation in annotations.items():
+                        # experiment, particle, frame = annotation_key
+                        annotation = annotation["assigned"]
+                        count_dict[constants.classes_inverse[annotation]] += 1
+
+                    record = {
+                        "Repeat": repeat_name,
+                        "Treatment": treatment_name,
+                        "Embryo": embryo_name,
+                    }
+                    for annotation_class, annotation_count in count_dict.items():
+                        record[annotation_class] = annotation_count / len(annotations)
+                    records.append(record)
+
+        df = pd.DataFrame(records)
+        df_sorted = df.sort_values(["Repeat", "Treatment", "Embryo"],
+                                   ascending=[True, True, True])
+
+        # Convert the dataframe to an XlsxWriter Excel object.
+        df_sorted.to_excel(writer, sheet_name=experiment_name, index=False)
 
         # Close the Pandas Excel writer and output the Excel file.
         writer.save()
@@ -179,13 +227,12 @@ def centrilyze_test(
 
         experiment_results[experiment.name] = repeat_results
 
-
-
     # Write to excel
     print(f"Saving results to {output_dir}...")
     write_centrilyze_results_to_excel(experiment_results, output_dir)
 
     print("Done!")
+
 
 # main
 if __name__ == "__main__":
