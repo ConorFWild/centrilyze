@@ -101,7 +101,7 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
 # Test function
 def centrilyze_test(
         test_data_dir="/nic/data/test/col_02-20220318T142333Z-001",
-        model_dir="/nic/models/model_resnet_18_high_low_affine_149.pyt",
+        model_dir="C:\nic\new_test_script_test_folder\model",
         output_dir="/nic/output/col_02",
         n_iter=1000,
         batch_size=4,
@@ -120,7 +120,10 @@ def centrilyze_test(
 
     # Load the trained model params
     image_model = CentrioleImageModel()
-    image_model.load_state_dict(model_file, map_location=torch.device("cpu"))
+    image_model.load_state_dict(
+        model_dir / "model.pyt",
+        map_location=torch.device("cpu"),
+    )
 
     # Get the test data
     centrilyze_test_data = CentrilyzeDataDir(test_data_dir)
