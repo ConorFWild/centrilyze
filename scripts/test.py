@@ -77,7 +77,7 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
         if not experiment_out_dir.exists():
             os.mkdir(experiment_out_dir)
 
-        workbook_file = experiment_out_dir / f"{experiment_name}.xlsx"
+        workbook_file = experiment_out_dir / f"{experiment_name}_sample_annotations.xlsx"
 
         # Create a Pandas Excel writer using XlsxWriter as the engine.
         writer = pd.ExcelWriter(workbook_file)
@@ -118,12 +118,12 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
         if not experiment_out_dir.exists():
             os.mkdir(experiment_out_dir)
 
-        workbook_file = experiment_out_dir / f"{experiment_name}.xlsx"
+        workbook_file = experiment_out_dir / f"{experiment_name}_summary.xlsx"
 
         # Create a Pandas Excel writer using XlsxWriter as the engine.
         writer = pd.ExcelWriter(workbook_file)
-        records = []
 
+        records = []
         for repeat_name, repeat_result in experiment_result.items():
 
             for treatment_name, treatment_result in repeat_result.items():
@@ -162,9 +162,10 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
         # Close the Pandas Excel writer and output the Excel file.
         writer.save()
 
+
 # Test function
 def centrilyze_test(
-        test_data_dir=r"C:\nic\data_for_conor\data_for_conor",
+        test_data_dir=r"C:\nic\test_data",
         model_dir=r"C:\nic\new_test_script_test_folder\model",
         output_dir=r"/nic/new_test_script_test_folder",
         n_iter=1000,
