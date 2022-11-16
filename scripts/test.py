@@ -146,7 +146,10 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
                         "Embryo": embryo_name,
                     }
                     for annotation_class, annotation_count in count_dict.items():
-                        record[annotation_class] = annotation_count / len(annotations)
+                        if len(annotations) == 0:
+                            record[annotation_class] = 0.0
+                        else:
+                            record[annotation_class] = annotation_count / len(annotations)
                     records.append(record)
 
         df = pd.DataFrame(records)
@@ -158,7 +161,6 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
 
         # Close the Pandas Excel writer and output the Excel file.
         writer.save()
-
 
 # Test function
 def centrilyze_test(
