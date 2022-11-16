@@ -115,7 +115,7 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
 
 # Test function
 def centrilyze_test(
-        test_data_dir=r"/nic/data/test",
+        test_data_dir=r"C:\nic\data_for_conor\data_for_conor",
         model_dir=r"C:\nic\new_test_script_test_folder\model",
         output_dir=r"/nic/new_test_script_test_folder",
         n_iter=1000,
