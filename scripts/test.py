@@ -76,7 +76,7 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
         if not experiment_out_dir.exists():
             os.mkdir(experiment_out_dir)
 
-        workbook_file = experiment_out_dir / "experiment.xlsx"
+        workbook_file = experiment_out_dir / f"{experiment_name}.xlsx"
 
         # Create a Pandas Excel writer using XlsxWriter as the engine.
         writer = pd.ExcelWriter(workbook_file)
@@ -98,7 +98,7 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
             df_sorted = df.sort_values(['Particle', 'Frame'], ascending=[True, True])
 
             # Convert the dataframe to an XlsxWriter Excel object.
-            df_sorted.to_excel(writer, sheet_name=embryo_name)
+            df_sorted.to_excel(writer, sheet_name=embryo_name, index=False)
 
         # Close the Pandas Excel writer and output the Excel file.
         writer.save()
