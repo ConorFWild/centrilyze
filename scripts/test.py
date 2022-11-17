@@ -64,7 +64,7 @@ def load_embryo_dataset(embryo, batch_size):
                                              drop_last=False
                                              )
 
-    return testloader
+    return testset, testloader
 
 
 def write_centrilyze_results_to_excel(experiment_results, out_dir):
@@ -145,7 +145,7 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
                         "Treatment": treatment_name,
                         "Embryo": embryo_name,
                     }
-                    for annotation_class in ["Oriented", "Precieved_Oriented","Slanted", "Precieved_Not_Oriented",
+                    for annotation_class in ["Oriented", "Precieved_Oriented", "Slanted", "Precieved_Not_Oriented",
                                              "Not_Oriented", "Unidentified", "No_sample"]:
                         annotation_count = count_dict[annotation_class]
                         if len(annotations) == 0:
@@ -163,6 +163,38 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
 
         # Close the Pandas Excel writer and output the Excel file.
         writer.save()
+
+
+def save_annotation_figures(annotations, testset, output_dir):
+    # Get nested annotations
+    nested_annotations = nest_annotation_keys(annotations)
+
+    # Reannotate
+    reannotations = reannotate(nested_annotations, constants.annotation_mapping)
+
+    # Get the states
+    states = {}
+    for experiment, particles in reannotations.items():
+        for particle, frames in particles.items():
+            frame_list = []
+            for frame, annotation in frames.items():
+                frame_list.append(annotation["assigned"])
+                frame_array = np.array(frame_list)
+            # print(frame_array)
+            # print(tuple(np.unique(frame_array)))
+            if tuple(np.unique(frame_array)) not in states:
+                states[tuple(np.unique(frame_array))] = set()
+            states[tuple(np.unique(frame_array))] = states[tuple(np.unique(frame_array))].union(
+                ((experiment, particle),))
+
+
+    # Save
+    save_all_state_figs(
+        states,
+        testset,
+        output_dir,
+        reannotations,
+    )
 
 # Test function
 def centrilyze_test(
@@ -194,10 +226,12 @@ def centrilyze_test(
     print("Finding test data...")
     centrilyze_test_data = CentrilyzeDataDir(test_data_dir)
 
-    # For each experiment
+    # Annotate the embryos For each experiment
     experiment_results = {}
     for experiment in centrilyze_test_data:
         print(f"\tAnnotating embryos for experiment: {experiment.name}...")
+
+        experiment_images_dir = output_dir / f"{experiment.name}_annotated_particles"
 
         # For each repeat
         repeat_results = {}
@@ -214,14 +248,20 @@ def centrilyze_test(
                 for embryo in treatment:
                     print(f"\t\t\t\tAnnotating embryo: {embryo.name}...")
                     # Load the Embryo Data
-                    testloader = load_embryo_dataset(embryo, batch_size)
+                    testset, testloader = load_embryo_dataset(embryo, batch_size)
 
                     # Annotate the data
-                    annotations = annotate(image_model, testloader)
-                    # print(annotations)
+                    annotations = annotate(
+                        image_model,
+                        testloader,
+                    )
 
-                    # Output the Confusion Matrix
-                    # confusion_matrix_test_table = get_confusion_matrix(annotations)
+                    # Save annotation plots
+                    save_annotation_figures(
+                        annotations,
+                        testset,
+                        experiment_images_dir
+                    )
 
                     #
                     embryo_results[embryo.name] = annotations
