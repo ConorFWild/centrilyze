@@ -145,7 +145,9 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
                         "Treatment": treatment_name,
                         "Embryo": embryo_name,
                     }
-                    for annotation_class, annotation_count in count_dict.items():
+                    for annotation_class in ["Oriented", "Precieved_Oriented","Slanted", "Precieved_Not_Oriented",
+                                             "Not_Oriented", "Unidentified", "No_sample"]:
+                        annotation_count = count_dict[annotation_class]
                         if len(annotations) == 0:
                             record[annotation_class] = 0.0
                         else:
@@ -162,10 +164,10 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
         # Close the Pandas Excel writer and output the Excel file.
         writer.save()
 
-
 # Test function
 def centrilyze_test(
-        test_data_dir=r"C:\nic\test_data",
+        # test_data_dir=r"C:\nic\test_data",
+        test_data_dir=r"C:\nic\data_for_conor\data_for_conor",
         model_dir=r"C:\nic\new_test_script_test_folder\model",
         output_dir=r"/nic/new_test_script_test_folder",
         n_iter=1000,
