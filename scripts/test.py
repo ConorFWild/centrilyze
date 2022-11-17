@@ -235,6 +235,8 @@ def centrilyze_test(
         print(f"\tAnnotating embryos for experiment: {experiment.name}...")
 
         experiment_images_dir = output_dir / f"{experiment.name}_annotated_particles"
+        if not experiment_images_dir.exists():
+            os.mkdir(experiment_images_dir)
 
         # For each repeat
         repeat_results = {}
