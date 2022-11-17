@@ -22,10 +22,12 @@ Data for Centrilyze should be stored in a directory formatted as follows:
 ```
 centrilyze_data
 ├── {experiment_name_1}
-│   ├── {embryo_name_1}
-│   │   ├── {embryo_particle_1_frame_1}.png
-│   │   ...
-│   │   └── {embryo_particle_n_frame_20}.png
+│   ├── {repeat_name_1}
+│   │   ├── {treatment_name_1}
+│   │   │   ├── {embryo_name_1}
+│   │   │   ├── {embryo_particle_1_frame_1}.png
+│   │   │   ...
+│   │   │   └── {embryo_particle_n_frame_20}.png
 │   ...
 │   └── {embryo_name_j}
 ... 
@@ -54,9 +56,10 @@ Centrilyze outputs an excel sheet for each embryo in the:
 ```
 centrilyze_output_dir
 ├── {experiment_name_1}
-│   ├── {embryo_name_1}.xlsx
+│   ├── {experiment_name_1_annotated_samples}.xlsx
+│   ├── {experiment_name_1_summary}.xlsx
 │   ...
-│   └── {embryo_name_j}.xlsx
+│   ├── {experiment_name_j_summary}.xlsx
 ...
 └── {experiment_name_k}
 
