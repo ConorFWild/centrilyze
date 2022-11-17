@@ -201,7 +201,7 @@ def centrilyze_test(
         # test_data_dir=r"C:\nic\test_data",
         test_data_dir=r"C:\nic\data_for_conor\data_for_conor",
         model_dir=r"C:\nic\new_test_script_test_folder\model",
-        output_dir=r"/nic/new_test_script_test_folder",
+        output_dir=r"/nic/new_test_script_test_folder_2",
         n_iter=1000,
         batch_size=4,
 ):
@@ -213,6 +213,9 @@ def centrilyze_test(
     # emission_matrix_path = Path("/nic/emission_matrix.npy")
     # emission_matrix_path_three_classes = Path("/nic/emission_matrix_three_classes.npy")
     output_dir = Path(output_dir).resolve()
+
+    if not output_dir.exists():
+        os.mkdir(output_dir)
 
     # Load the trained model params
     print("Loading model parameters...")
