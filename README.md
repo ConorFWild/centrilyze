@@ -59,7 +59,7 @@ centrilyze_output_dir
 │   ├── {experiment_name_1_annotated_samples}.xlsx
 │   ├── {experiment_name_1_summary}.xlsx
 │   ...
-│   ├── {experiment_name_j_summary}.xlsx
+│   └── {experiment_name_j_summary}.xlsx
 ...
 └── {experiment_name_k}
 

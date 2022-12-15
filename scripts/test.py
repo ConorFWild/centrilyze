@@ -25,6 +25,8 @@ from typing import Type, Any, Callable, Union, List, Optional
 
 from hmmlearn import hmm
 
+from loguru import logger
+
 # Centrilyze imports
 from centrilyze import (CentrioleImageFiles,
                         ImageDataset,
@@ -180,13 +182,10 @@ def save_annotation_figures(annotations, testset, output_dir):
             for frame, annotation in frames.items():
                 frame_list.append(annotation["assigned"])
                 frame_array = np.array(frame_list)
-            # print(frame_array)
-            # print(tuple(np.unique(frame_array)))
             if tuple(np.unique(frame_array)) not in states:
                 states[tuple(np.unique(frame_array))] = set()
             states[tuple(np.unique(frame_array))] = states[tuple(np.unique(frame_array))].union(
                 ((experiment, particle),))
-
 
     # Save
     save_all_state_figs(
@@ -195,6 +194,62 @@ def save_annotation_figures(annotations, testset, output_dir):
         output_dir,
         reannotations,
     )
+
+
+class FSModel:
+    def __init__(self,
+                 test_data_dir,
+                 model_dir,
+                 output_dir
+                 ):
+        self.test_data_dir = Path(test_data_dir).resolve()
+        self.model_dir = Path(model_dir).resolve()
+        self.output_dir = Path(output_dir).resolve()
+
+        if not self.output_dir.exists():
+            os.mkdir(self.output_dir)
+
+        self.centrilyze_test_data = CentrilyzeDataDir(self.test_data_dir)
+
+
+def make_experiment_dir(experiment, fs):
+    experiment_images_dir = fs.output_dir / f"{experiment.name}_annotated_particles"
+    if not experiment_images_dir.exists():
+        os.mkdir(experiment_images_dir)
+
+
+def annotate_embryo(experiment, embryo, batch_size, image_model, fs):
+    logger.debug(f"Annotating embryo: {embryo.name}...")
+
+    # Load the Embryo Data
+    testset, testloader = load_embryo_dataset(embryo, batch_size)
+
+    # Annotate the data
+    annotations = annotate(
+        image_model,
+        testloader,
+    )
+    # Save annotation plots
+    experiment_images_dir = fs.output_dir / f"{experiment.name}_annotated_particles"
+
+    save_annotation_figures(
+        annotations,
+        testset,
+        experiment_images_dir
+    )
+
+    #
+    return annotations
+
+
+def annotate_fs(fs: FSModel, batch_size, image_model):
+    fs.centrilyze_test_data.map_experiments(lambda x: make_experiment_dir(x, fs))
+
+    experiment_results = fs.centrilyze_test_data.map_embryos(
+        lambda experiment, repeat, treatment, embryo: annotate_embryo(experiment, embryo, batch_size, image_model, fs)
+    )
+
+    return experiment_results
 
 # Test function
 def centrilyze_test(
@@ -206,82 +261,31 @@ def centrilyze_test(
         batch_size=4,
 ):
     # Settings
-    test_data_dir = Path(test_data_dir).resolve()
-    model_dir = Path(model_dir).resolve()
-    # annotations_file = Path("/nic/annotations.json")
-    # sequences_file = Path("/nic/sequences.npy")
-    # emission_matrix_path = Path("/nic/emission_matrix.npy")
-    # emission_matrix_path_three_classes = Path("/nic/emission_matrix_three_classes.npy")
-    output_dir = Path(output_dir).resolve()
-
-    if not output_dir.exists():
-        os.mkdir(output_dir)
+    logger.info("Finding test data...")
+    fs = FSModel(
+        test_data_dir=test_data_dir,
+        model_dir=model_dir,
+        output_dir=output_dir,
+    )
 
     # Load the trained model params
-    print("Loading model parameters...")
+    logger.info("Loading model parameters...")
     image_model = CentrioleImageModel()
     image_model.load_state_dict(
-        model_dir / "model.pyt",
+        fs.model_dir / "model.pyt",
         map_location=torch.device("cpu"),
     )
 
-    # Get the test data
-    print("Finding test data...")
-    centrilyze_test_data = CentrilyzeDataDir(test_data_dir)
-
     # Annotate the embryos For each experiment
-    experiment_results = {}
-    for experiment in centrilyze_test_data:
-        print(f"\tAnnotating embryos for experiment: {experiment.name}...")
-
-        experiment_images_dir = output_dir / f"{experiment.name}_annotated_particles"
-        if not experiment_images_dir.exists():
-            os.mkdir(experiment_images_dir)
-
-        # For each repeat
-        repeat_results = {}
-        for repeat in experiment:
-            print(f"\t\tAnnotating repeat: {repeat.name}...")
-
-            # For each treatment
-            treatment_results = {}
-            for treatment in repeat:
-                print(f"\t\t\tAnnotating treatment: {treatment.name}...")
-
-                # For each embryo
-                embryo_results = {}
-                for embryo in treatment:
-                    print(f"\t\t\t\tAnnotating embryo: {embryo.name}...")
-                    # Load the Embryo Data
-                    testset, testloader = load_embryo_dataset(embryo, batch_size)
-
-                    # Annotate the data
-                    annotations = annotate(
-                        image_model,
-                        testloader,
-                    )
-
-                    # Save annotation plots
-                    save_annotation_figures(
-                        annotations,
-                        testset,
-                        experiment_images_dir
-                    )
-
-                    #
-                    embryo_results[embryo.name] = annotations
-
-                treatment_results[treatment.name] = embryo_results
-
-            repeat_results[repeat.name] = treatment_results
-
-        experiment_results[experiment.name] = repeat_results
+    logger.info("Annotating embryos...")
+    experiment_results = annotate_fs(fs, batch_size, image_model)
 
     # Write to excel
-    print(f"Saving results to {output_dir}...")
-    write_centrilyze_results_to_excel(experiment_results, output_dir)
+    logger.info(f"Saving results to {output_dir}...")
+    write_centrilyze_results_to_excel(experiment_results, fs.output_dir)
 
-    print("Done!")
+    # Done
+    logger.info("Done!")
 
 
 # main

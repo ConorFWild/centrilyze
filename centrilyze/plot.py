@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 from centrilyze import constants
 
+from loguru import logger
 
 def get_particle_fig(particle_data, particle_key, particle_annotations):
 
@@ -33,7 +34,7 @@ def save_state_figs(particles, annotations, state_dir):
 
 def save_all_state_figs(states, testset, output_dir, reannotations,):
     for state, particle_keys in states.items():
-        print(f"Saving figures for state: {state}")
+        logger.debug(f"Saving figures for state: {state}")
 
         particles = {particle_key: testset.get_sequence_data(*particle_key) for particle_key in particle_keys}
         annotations = {}
