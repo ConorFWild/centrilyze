@@ -1,30 +1,13 @@
 import os
 from pathlib import Path
-import json
-import re
 
 import fire
-
 import torch
-from torch import Tensor
-import torch.optim as optim
-from torch.utils.data import Dataset
-from torch import nn
-from torch import functional as F
-
 import torchvision
 import torchvision.transforms as transforms
-import torchvision.models as models
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-from matplotlib import image as mpl_image
-from typing import Type, Any, Callable, Union, List, Optional
-
-from hmmlearn import hmm
-
 from loguru import logger
 
 # Centrilyze imports
@@ -32,16 +15,10 @@ from centrilyze import (CentrioleImageFiles,
                         ImageDataset,
                         CentrioleImageModel,
                         CentrilyzeDataDir,
-                        HMM,
                         constants,
-                        image_transform,
                         target_transform,
                         annotate,
                         nest_annotation_keys,
-                        get_sequence_matrix,
-                        get_transition_count_matrix,
-                        get_transition_rate_matrix,
-                        get_confusion_matrix,
                         reannotate,
                         save_all_state_figs,
                         )
@@ -69,7 +46,128 @@ def load_embryo_dataset(embryo, batch_size):
     return testset, testloader
 
 
-def write_centrilyze_results_to_excel(experiment_results, out_dir):
+def make_sample_sheet(experiment_result):
+    records = []
+
+    for repeat_name, repeat_result in experiment_result.items():
+        for treatment_name, treatment_result in repeat_result.items():
+            for embryo_name, annotations in treatment_result.items():
+                for annotation_key, annotation in annotations.items():
+                    experiment, particle, frame = annotation_key
+                    annotation = annotation["assigned"]
+                    record = {
+                        "Repeat": repeat_name,
+                        "Treatment": treatment_name,
+                        "Embryo": embryo_name,
+                        "Particle": particle,
+                        "Frame": frame,
+                        "Annotation": annotation,
+                    }
+                    records.append(record)
+
+    df = pd.DataFrame(records)
+    df_sorted = df.sort_values(["Repeat", "Treatment", "Embryo", 'Particle', 'Frame'],
+                               ascending=[True, True, True, True, True])
+
+    return df_sorted
+
+
+def make_summary_sheet(experiment_result):
+    records = []
+    for repeat_name, repeat_result in experiment_result.items():
+        for treatment_name, treatment_result in repeat_result.items():
+            for embryo_name, annotations in treatment_result.items():
+                count_dict = {}
+
+                for annotation_class in constants.classes:
+                    count_dict[annotation_class] = 0
+
+                for annotation_key, annotation in annotations.items():
+                    # experiment, particle, frame = annotation_key
+                    annotation = annotation["assigned"]
+                    count_dict[constants.classes_inverse[annotation]] += 1
+
+                record = {
+                    "Repeat": repeat_name,
+                    "Treatment": treatment_name,
+                    "Embryo": embryo_name,
+                }
+                for annotation_class in ["Oriented", "Precieved_Oriented", "Slanted", "Precieved_Not_Oriented",
+                                         "Not_Oriented", "Unidentified", "No_sample"]:
+                    annotation_count = count_dict[annotation_class]
+                    if len(annotations) == 0:
+                        record[annotation_class] = 0.0
+                    else:
+                        record[annotation_class] = annotation_count / len(annotations)
+                records.append(record)
+
+    df = pd.DataFrame(records)
+    df_sorted = df.sort_values(["Repeat", "Treatment", "Embryo"],
+                               ascending=[True, True, True])
+
+    return df_sorted
+
+
+def make_transition_sheet(experiment_result):
+    records = []
+    for repeat_name, repeat_result in experiment_result.items():
+        for treatment_name, treatment_result in repeat_result.items():
+            for embryo_name, annotations in treatment_result.items():
+                # Get nested annotations
+                nested_annotations = nest_annotation_keys(annotations)
+
+                # Reannotate
+                reannotations = reannotate(nested_annotations, constants.annotation_mapping)
+
+                # Get the states
+                states = {j: {k: 0 for k in range(6)} for j in range(6)}
+                for experiment, particles in reannotations.items():
+                    for particle, frames in particles.items():
+                        for j in range(20):
+                            if j in frames:
+                                if j - 1 in frames:
+                                    state_current = frames[j]['assigned']
+                                    state_previous = frames[j - 1]['assigned']
+                                    states[state_previous][state_current] += 1
+
+                record = {
+                    "Repeat": repeat_name,
+                    "Treatment": treatment_name,
+                    "Embryo": embryo_name,
+                }
+                for annotation_class_index in states:
+                    annotation_class_name = constants.classes_inverse[annotation_class_index]
+                    total_transitions_observed = sum([states[annotation_class_index][k] for k in range(6)])
+                    if total_transitions_observed == 0:
+                        record[annotation_class_name] = 0.0
+                    else:
+                        record[annotation_class_name] = states[annotation_class_index[
+                            annotation_class_index]] / total_transitions_observed
+                records.append(record)
+
+    df = pd.DataFrame(records)
+    df_sorted = df.sort_values(["Repeat", "Treatment", "Embryo"],
+                               ascending=[True, True, True])
+
+    return df_sorted
+
+
+def make_excel_file(sheet_frames, workbook_file):
+    # Create a Pandas Excel writer using XlsxWriter as the engine.
+    writer = pd.ExcelWriter(workbook_file)
+
+    for sheet_name, df_sheet in sheet_frames.items():
+        # Convert the dataframe to an XlsxWriter Excel object.
+        df_sheet.to_excel(writer, sheet_name=sheet_name, index=False)
+
+    # Close the Pandas Excel writer and output the Excel file.
+    writer.save()
+
+
+def write_centrilyze_results_to_excel(
+        experiment_results,
+        out_dir,
+):
     if not out_dir.exists():
         os.mkdir(out_dir)
 
@@ -79,40 +177,10 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
         if not experiment_out_dir.exists():
             os.mkdir(experiment_out_dir)
 
-        workbook_file = experiment_out_dir / f"{experiment_name}_sample_annotations.xlsx"
-
-        # Create a Pandas Excel writer using XlsxWriter as the engine.
-        writer = pd.ExcelWriter(workbook_file)
-        records = []
-
-        for repeat_name, repeat_result in experiment_result.items():
-
-            for treatment_name, treatment_result in repeat_result.items():
-
-                for embryo_name, annotations in treatment_result.items():
-
-                    for annotation_key, annotation in annotations.items():
-                        experiment, particle, frame = annotation_key
-                        annotation = annotation["assigned"]
-                        record = {
-                            "Repeat": repeat_name,
-                            "Treatment": treatment_name,
-                            "Embryo": embryo_name,
-                            "Particle": particle,
-                            "Frame": frame,
-                            "Annotation": annotation,
-                        }
-                        records.append(record)
-
-        df = pd.DataFrame(records)
-        df_sorted = df.sort_values(["Repeat", "Treatment", "Embryo", 'Particle', 'Frame'],
-                                   ascending=[True, True, True, True, True])
-
-        # Convert the dataframe to an XlsxWriter Excel object.
-        df_sorted.to_excel(writer, sheet_name=experiment_name, index=False)
-
-        # Close the Pandas Excel writer and output the Excel file.
-        writer.save()
+        make_excel_file(
+            {experiment_name: make_sample_sheet(experiment_result), },
+            experiment_out_dir / f"{experiment_name}_sample_annotations.xlsx"
+        )
 
     # Summaries
     for experiment_name, experiment_result in experiment_results.items():
@@ -120,51 +188,13 @@ def write_centrilyze_results_to_excel(experiment_results, out_dir):
         if not experiment_out_dir.exists():
             os.mkdir(experiment_out_dir)
 
-        workbook_file = experiment_out_dir / f"{experiment_name}_summary.xlsx"
-
-        # Create a Pandas Excel writer using XlsxWriter as the engine.
-        writer = pd.ExcelWriter(workbook_file)
-
-        records = []
-        for repeat_name, repeat_result in experiment_result.items():
-
-            for treatment_name, treatment_result in repeat_result.items():
-
-                for embryo_name, annotations in treatment_result.items():
-
-                    count_dict = {}
-
-                    for annotation_class in constants.classes:
-                        count_dict[annotation_class] = 0
-
-                    for annotation_key, annotation in annotations.items():
-                        # experiment, particle, frame = annotation_key
-                        annotation = annotation["assigned"]
-                        count_dict[constants.classes_inverse[annotation]] += 1
-
-                    record = {
-                        "Repeat": repeat_name,
-                        "Treatment": treatment_name,
-                        "Embryo": embryo_name,
-                    }
-                    for annotation_class in ["Oriented", "Precieved_Oriented", "Slanted", "Precieved_Not_Oriented",
-                                             "Not_Oriented", "Unidentified", "No_sample"]:
-                        annotation_count = count_dict[annotation_class]
-                        if len(annotations) == 0:
-                            record[annotation_class] = 0.0
-                        else:
-                            record[annotation_class] = annotation_count / len(annotations)
-                    records.append(record)
-
-        df = pd.DataFrame(records)
-        df_sorted = df.sort_values(["Repeat", "Treatment", "Embryo"],
-                                   ascending=[True, True, True])
-
-        # Convert the dataframe to an XlsxWriter Excel object.
-        df_sorted.to_excel(writer, sheet_name=experiment_name, index=False)
-
-        # Close the Pandas Excel writer and output the Excel file.
-        writer.save()
+        make_excel_file(
+            {
+                f'{experiment_name}_summary': make_summary_sheet(experiment_result),
+                f'{experiment_name}_transitions': make_transition_sheet(experiment_result),
+            },
+            experiment_out_dir / f"{experiment_name}_summary.xlsx"
+        )
 
 
 def save_annotation_figures(annotations, testset, output_dir):
@@ -251,6 +281,7 @@ def annotate_fs(fs: FSModel, batch_size, image_model):
 
     return experiment_results
 
+
 # Test function
 def centrilyze_test(
         # test_data_dir=r"C:\nic\test_data",
@@ -278,11 +309,18 @@ def centrilyze_test(
 
     # Annotate the embryos For each experiment
     logger.info("Annotating embryos...")
-    experiment_results = annotate_fs(fs, batch_size, image_model)
+    experiment_results = annotate_fs(
+        fs,
+        batch_size,
+        image_model,
+    )
 
     # Write to excel
     logger.info(f"Saving results to {output_dir}...")
-    write_centrilyze_results_to_excel(experiment_results, fs.output_dir)
+    write_centrilyze_results_to_excel(
+        experiment_results,
+        fs.output_dir,
+    )
 
     # Done
     logger.info("Done!")
