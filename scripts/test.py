@@ -253,8 +253,8 @@ def annotate_fs(fs: FSModel, batch_size, image_model):
 
 # Test function
 def centrilyze_test(
-        # test_data_dir=r"C:\nic\test_data",
-        test_data_dir=r"C:\nic\data_for_conor\data_for_conor",
+        test_data_dir=r"C:\nic\test_data",
+        # test_data_dir=r"C:\nic\data_for_conor\data_for_conor",
         model_dir=r"C:\nic\new_test_script_test_folder\model",
         output_dir=r"/nic/new_test_script_test_folder_2",
         n_iter=1000,

@@ -23,6 +23,7 @@ from centrilyze import (CentrioleImageFiles,
                         save_all_state_figs,
                         )
 
+
 def sample_json_from_dir(input_dir_path, output_json_path, random_order=True):
     input_dir_path = Path(input_dir_path).resolve()
     output_json_path = Path(output_json_path).resolve()
