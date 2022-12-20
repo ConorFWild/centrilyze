@@ -108,6 +108,41 @@ def make_summary_sheet(experiment_result):
     return df_sorted
 
 
+def make_summary_sheet_three_classes(experiment_result):
+    records = []
+    for repeat_name, repeat_result in experiment_result.items():
+        for treatment_name, treatment_result in repeat_result.items():
+            for embryo_name, annotations in treatment_result.items():
+                count_dict = {}
+
+                for annotation_class in constants.classes_reduced:
+                    count_dict[annotation_class] = 0
+
+                for annotation_key, annotation in annotations.items():
+                    # experiment, particle, frame = annotation_key
+                    annotation = annotation["assigned"]
+                    count_dict[constants.classes_reduced_inverse[constants.annotation_mapping[annotation]]] += 1
+
+                record = {
+                    "Repeat": repeat_name,
+                    "Treatment": treatment_name,
+                    "Embryo": embryo_name,
+                }
+                for annotation_class in constants.classes_reduced:
+                    annotation_count = count_dict[annotation_class]
+                    if len(annotations) == 0:
+                        record[annotation_class] = 0.0
+                    else:
+                        record[annotation_class] = annotation_count / len(annotations)
+                records.append(record)
+
+    df = pd.DataFrame(records)
+    df_sorted = df.sort_values(["Repeat", "Treatment", "Embryo"],
+                               ascending=[True, True, True])
+
+    return df_sorted
+
+
 def make_transition_sheet(experiment_result):
     records = []
     for repeat_name, repeat_result in experiment_result.items():
@@ -120,7 +155,7 @@ def make_transition_sheet(experiment_result):
                 reannotations = reannotate(nested_annotations, constants.annotation_mapping)
 
                 # Get the states
-                states = {j: {k: 0 for k in range(6)} for j in range(6)}
+                states = {j: {k: 0 for k in range(len(constants.classes))} for j in range(len(constants.classes))}
                 for experiment, particles in reannotations.items():
                     for particle, frames in particles.items():
                         for j in range(20):
@@ -137,12 +172,73 @@ def make_transition_sheet(experiment_result):
                 }
                 for annotation_class_index in states:
                     annotation_class_name = constants.classes_inverse[annotation_class_index]
-                    total_transitions_observed = sum([states[annotation_class_index][k] for k in range(6)])
+                    annotation_class_transitions = states[annotation_class_index]
+                    class_to_class_transitions = annotation_class_transitions[annotation_class_index]
+                    total_transitions_observed = sum(
+                        [
+                            annotation_class_transitions[k]
+                            for k
+                            in range(len(constants.classes))
+                        ]
+                    )
+                    logger.debug(f"{annotation_class_name}: {total_transitions_observed}")
                     if total_transitions_observed == 0:
                         record[annotation_class_name] = 0.0
                     else:
-                        record[annotation_class_name] = states[annotation_class_index[
-                            annotation_class_index]] / total_transitions_observed
+                        record[annotation_class_name] = class_to_class_transitions / total_transitions_observed
+                records.append(record)
+
+    df = pd.DataFrame(records)
+    df_sorted = df.sort_values(["Repeat", "Treatment", "Embryo"],
+                               ascending=[True, True, True])
+
+    return df_sorted
+
+
+def make_transition_sheet_three_classes(experiment_result):
+    records = []
+    for repeat_name, repeat_result in experiment_result.items():
+        for treatment_name, treatment_result in repeat_result.items():
+            for embryo_name, annotations in treatment_result.items():
+                # Get nested annotations
+                nested_annotations = nest_annotation_keys(annotations)
+
+                # Reannotate
+                reannotations = reannotate(nested_annotations, constants.annotation_mapping)
+
+                # Get the states
+                states = {j: {k: 0 for k in range(len(constants.classes_reduced))} for j in range(
+                    len(constants.classes_reduced))}
+                for experiment, particles in reannotations.items():
+                    for particle, frames in particles.items():
+                        for j in range(20):
+                            if j in frames:
+                                if j - 1 in frames:
+                                    state_current = constants.annotation_mapping[frames[j]['assigned']]
+                                    state_previous = constants.annotation_mapping[frames[j - 1]['assigned']]
+                                    states[state_previous][state_current] += 1
+
+                record = {
+                    "Repeat": repeat_name,
+                    "Treatment": treatment_name,
+                    "Embryo": embryo_name,
+                }
+                for annotation_class_index in states:
+                    annotation_class_name = constants.classes_reduced_inverse[annotation_class_index]
+                    annotation_class_transitions = states[annotation_class_index]
+                    class_to_class_transitions = annotation_class_transitions[annotation_class_index]
+                    total_transitions_observed = sum(
+                        [
+                            annotation_class_transitions[k]
+                            for k
+                            in range(len(constants.classes_reduced))
+                        ]
+                    )
+                    logger.debug(f"{annotation_class_name}: {total_transitions_observed}")
+                    if total_transitions_observed == 0:
+                        record[annotation_class_name] = 0.0
+                    else:
+                        record[annotation_class_name] = class_to_class_transitions / total_transitions_observed
                 records.append(record)
 
     df = pd.DataFrame(records)
@@ -172,6 +268,7 @@ def write_centrilyze_results_to_excel(
         os.mkdir(out_dir)
 
     # Sample annotations
+    logger.info("Creating sample annotation excel sheets...")
     for experiment_name, experiment_result in experiment_results.items():
         experiment_out_dir = out_dir / experiment_name
         if not experiment_out_dir.exists():
@@ -183,6 +280,7 @@ def write_centrilyze_results_to_excel(
         )
 
     # Summaries
+    logger.info("Creating experiment summaries...")
     for experiment_name, experiment_result in experiment_results.items():
         experiment_out_dir = out_dir / experiment_name
         if not experiment_out_dir.exists():
@@ -192,6 +290,8 @@ def write_centrilyze_results_to_excel(
             {
                 f'{experiment_name}_summary': make_summary_sheet(experiment_result),
                 f'{experiment_name}_transitions': make_transition_sheet(experiment_result),
+                f'{experiment_name}_summary_3_class': make_summary_sheet_three_classes(experiment_result),
+                f'{experiment_name}_transitions_3_class': make_transition_sheet_three_classes(experiment_result),
             },
             experiment_out_dir / f"{experiment_name}_summary.xlsx"
         )
@@ -260,7 +360,15 @@ def annotate_embryo(experiment, embryo, batch_size, image_model, fs):
         testloader,
     )
     # Save annotation plots
-    experiment_images_dir = fs.output_dir / f"{experiment.name}_annotated_particles"
+    if not fs.output_dir.exists():
+        os.mkdir(fs.output_dir)
+
+    experiment_output_dir = fs.output_dir / f"{experiment.name}"
+    if not experiment_output_dir.exists():
+        os.mkdir(experiment_output_dir)
+    experiment_images_dir = experiment_output_dir / f"{experiment.name}_annotated_particles"
+    if not experiment_images_dir.exists():
+        os.mkdir(experiment_images_dir)
 
     save_annotation_figures(
         annotations,
@@ -284,10 +392,11 @@ def annotate_fs(fs: FSModel, batch_size, image_model):
 
 # Test function
 def centrilyze_test(
-        test_data_dir=r"C:\nic\test_data",
+        # test_data_dir=r"C:\nic\test_data",
         # test_data_dir=r"C:\nic\data_for_conor\data_for_conor",
+        test_data_dir=r"C:\nic\test_heirarchical_data_high_quality",
         model_dir=r"C:\nic\new_test_script_test_folder\model",
-        output_dir=r"/nic/new_test_script_test_folder_2",
+        output_dir=r"/nic/new_test_script_test_folder_high_quality",
         n_iter=1000,
         batch_size=4,
 ):
@@ -298,6 +407,8 @@ def centrilyze_test(
         model_dir=model_dir,
         output_dir=output_dir,
     )
+    logger.info(fs.centrilyze_test_data.to_dict())
+
 
     # Load the trained model params
     logger.info("Loading model parameters...")
@@ -317,10 +428,8 @@ def centrilyze_test(
 
     # Write to excel
     logger.info(f"Saving results to {output_dir}...")
-    write_centrilyze_results_to_excel(
-        experiment_results,
-        fs.output_dir,
-    )
+    write_centrilyze_results_to_excel(experiment_results, fs.output_dir)
+    logger.info(f"Wrote results to: {fs.output_dir}")
 
     # Done
     logger.info("Done!")

@@ -9,7 +9,7 @@ cd centrilyze
 conda create -n centrilyze python=3.7
 conda activate centrilyze
 conda install pytorch torchvision -c pytorch
-conda install -c conda-forge numpy pandas scipy scikit-learn jupyter matplotlib hmmlearn fire openpyxl
+conda install -c conda-forge numpy pandas scipy scikit-learn jupyter matplotlib hmmlearn fire openpyxl loguru
 ```
 
 ## Using Centrilyze
