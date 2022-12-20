@@ -152,11 +152,11 @@ def make_transition_sheet(experiment_result):
                 nested_annotations = nest_annotation_keys(annotations)
 
                 # Reannotate
-                reannotations = reannotate(nested_annotations, constants.annotation_mapping)
+                # reannotations = reannotate(nested_annotations, constants.annotation_mapping)
 
                 # Get the states
                 states = {j: {k: 0 for k in range(len(constants.classes))} for j in range(len(constants.classes))}
-                for experiment, particles in reannotations.items():
+                for experiment, particles in nested_annotations.items():
                     for particle, frames in particles.items():
                         for j in range(20):
                             if j in frames:
@@ -214,8 +214,8 @@ def make_transition_sheet_three_classes(experiment_result):
                         for j in range(20):
                             if j in frames:
                                 if j - 1 in frames:
-                                    state_current = constants.annotation_mapping[frames[j]['assigned']]
-                                    state_previous = constants.annotation_mapping[frames[j - 1]['assigned']]
+                                    state_current = frames[j]['assigned']
+                                    state_previous = frames[j - 1]['assigned']
                                     states[state_previous][state_current] += 1
 
                 record = {
@@ -370,11 +370,11 @@ def annotate_embryo(experiment, embryo, batch_size, image_model, fs):
     if not experiment_images_dir.exists():
         os.mkdir(experiment_images_dir)
 
-    save_annotation_figures(
-        annotations,
-        testset,
-        experiment_images_dir
-    )
+    # save_annotation_figures(
+    #     annotations,
+    #     testset,
+    #     experiment_images_dir
+    # )
 
     #
     return annotations
@@ -392,9 +392,9 @@ def annotate_fs(fs: FSModel, batch_size, image_model):
 
 # Test function
 def centrilyze_test(
-        # test_data_dir=r"C:\nic\test_data",
+        test_data_dir=r"C:\nic\test_data",
         # test_data_dir=r"C:\nic\data_for_conor\data_for_conor",
-        test_data_dir=r"C:\nic\test_heirarchical_data_high_quality",
+        # test_data_dir=r"C:\nic\test_heirarchical_data_high_quality",
         model_dir=r"C:\nic\new_test_script_test_folder\model",
         output_dir=r"/nic/new_test_script_test_folder_high_quality",
         n_iter=1000,
