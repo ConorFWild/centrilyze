@@ -26,7 +26,7 @@ def path_to_annotation_experiment_particle_frame(path):
 class EmbryoDataDir:
     def __init__(self, embryo_data_dir: Path):
         self.path = embryo_data_dir
-
+        self.name = embryo_data_dir.name
         self.image_files = self.get_image_files_from_dir(self.path)
 
     def get_image_files_from_dir(self, embryo_dir):
@@ -172,7 +172,6 @@ class CentrilyzeDataDir:
                     # For each embryo
                     embryo_results = {}
                     for embryo in treatment:
-
                         embryo_results[embryo.name] = f(experiment, repeat, treatment, embryo)
 
                     treatment_results[treatment.name] = embryo_results
@@ -182,6 +181,28 @@ class CentrilyzeDataDir:
             experiment_results[experiment.name] = repeat_results
 
         return experiment_results
+
+    def to_dict(self):
+        return {
+            experiment.name: {
+                repeat.name: {
+                    treatment.name: {
+                        embryo.name: len(embryo.image_files)
+                        for embryo in treatment
+                    }
+                    for treatment in repeat
+                }
+                for repeat in experiment
+            }
+            for experiment in self
+        }
+        # experiments = {}
+        # for experiment in self:
+        #     for repeat in experiment:
+        #         for treatment in repeat:
+        #             for embryo in treatment:
+        #
+        #     experiment[experiment.name] =
 
     def __iter__(self):
         for experiment in self.experiments:
