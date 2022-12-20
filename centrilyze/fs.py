@@ -29,13 +29,11 @@ class EmbryoDataDir:
 
         self.image_files = self.get_image_files_from_dir(self.path)
 
-    def get_embryos_from_dir(self, embryo_dir):
+    def get_image_files_from_dir(self, embryo_dir):
 
         embryo_image_files = []
         for embryo_image_file in embryo_dir.glob("*"):
             if not embryo_image_file.is_dir():
-                continue
-            else:
                 embryo_image_files.append(embryo_image_file)
 
         return embryo_image_files
@@ -58,7 +56,7 @@ class TreatmentDataDir:
             if not directory.is_dir():
                 continue
             else:
-                embryo = ExperimentDataDir(directory)
+                embryo = EmbryoDataDir(directory)
                 embryos.append(embryo)
 
         return embryos
@@ -72,19 +70,30 @@ class RepeatDataDir:
     def __init__(self, experiment_data_dir: Path):
         self.path = experiment_data_dir
         self.name = experiment_data_dir.name
-        self.treatments = self.get_embryos_from_dir(self.path)
+        self.treatments = self.get_treatments_from_data_dir(self.path)
 
-    def get_embryos_from_dir(self, embryos_dir):
+    # def get_embryos_from_dir(self, embryos_dir):
+    #
+    #     embryos = []
+    #     for directory in embryos_dir.glob("*"):
+    #         if not directory.is_dir():
+    #             continue
+    #         else:
+    #             embryo = ExperimentDataDir(directory)
+    #             embryos.append(embryo)
+    #
+    #     return embryos
 
-        embryos = []
-        for directory in embryos_dir.glob("*"):
+    def get_treatments_from_data_dir(self, repeats_dir):
+        treatments = []
+        for directory in repeats_dir.glob("*"):
             if not directory.is_dir():
                 continue
             else:
-                embryo = ExperimentDataDir(directory)
-                embryos.append(embryo)
+                repeat = TreatmentDataDir(directory)
+                treatments.append(repeat)
 
-        return embryos
+        return treatments
 
     def __iter__(self):
         for embryo in self.treatments:
