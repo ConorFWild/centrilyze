@@ -1,0 +1,29 @@
+# Logs
+centrilyze-gui/logs
+centrilyze-gui/*.log
+
+# Runtime data
+centrilyze-gui/pids
+centrilyze-gui/*.pid
+centrilyze-gui/*.seed
+
+# Coverage directory used by tools like istanbul
+centrilyze-gui/coverage
+centrilyze-gui/.eslintcache
+
+# Dependency directory
+# https://www.npmjs.org/doc/misc/npm-faq.html#should-i-check-my-node_modules-folder-into-git
+centrilyze-gui/node_modules
+
+# OSX
+centrilyze-gui/.DS_Store
+
+centrilyze-gui/release/app/dist
+centrilyze-gui/release/build
+centrilyze-gui/.erb/dll
+
+.idea
+npm-debug.log.*
+*.css.d.ts
+*.sass.d.ts
+*.scss.d.ts
