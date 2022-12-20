@@ -370,18 +370,18 @@ def annotate_embryo(experiment, embryo, batch_size, image_model, fs):
     if not experiment_images_dir.exists():
         os.mkdir(experiment_images_dir)
 
-    # save_annotation_figures(
-    #     annotations,
-    #     testset,
-    #     experiment_images_dir
-    # )
+    save_annotation_figures(
+        annotations,
+        testset,
+        experiment_images_dir
+    )
 
     #
     return annotations
 
 
 def annotate_fs(fs: FSModel, batch_size, image_model):
-    fs.centrilyze_test_data.map_experiments(lambda x: make_experiment_dir(x, fs))
+    # fs.centrilyze_test_data.map_experiments(lambda x: make_experiment_dir(x, fs))
 
     experiment_results = fs.centrilyze_test_data.map_embryos(
         lambda experiment, repeat, treatment, embryo: annotate_embryo(experiment, embryo, batch_size, image_model, fs)
